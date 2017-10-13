@@ -2,9 +2,9 @@ $(document).ready(function(){
 
 	function Post(param){
 
-		this.countComments = param.countComments;
+		this.countComments = param.countComments || 1;
 
-		this.loadMoreComments = param.loadMoreComments;
+		this.loadMoreComments = param.loadMoreComments || 1;
 
 		this.items = [];
 
@@ -32,7 +32,7 @@ $(document).ready(function(){
 
 		},
 
-		loadMore: function(arr, num, pos){
+		loadMore: function(arr){
 
 			this.countComments = arr.length;
 
@@ -163,8 +163,8 @@ $(document).ready(function(){
 
 
 	var post = new Post({
-		countComments:2,
-		loadMoreComments: 2
+		countComments:1,
+		loadMoreComments: 1
 	});
 
 
