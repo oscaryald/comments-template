@@ -11,27 +11,15 @@ $(document).ready(function(){
 		constructor: Post,
 
 		init : function(){
-
-
 			this.getPost();
-
 			this.addEventHandler();
-
-			this.filterComment()
-
 		},
 
-
 		loadMore: function(arr){
-
-			// this.countComments = arr.length;
-
 			if(this.countComments + this.loadMoreComments > this.countComments){
 				this.countComments += this.loadMoreComments
 			}
-
 			this.getPost()
-			
 			return 
 		},
 
@@ -46,31 +34,31 @@ $(document).ready(function(){
 		},
 
 		addEventHandler: function(){
+			var that = this,
+				textarea,
+				commentId;
 
-			var that = this;
-			var valTextarea
-			var commentId
-
-			// var valTextarea = $(this).parents('li').find('.comment-content').val();
-
-			// var commentId = $(this).parents('li').attr('id')
+			this.addClassToSend();	
 
 			$('.load-more').on('click', function(){
 				that.loadMore(that.items);
 				return false
 			});
 
-			$('.comments-content').on('click','.edit', function(){
-				valTextarea = $(this).parents('li').find('.comment-content').val();
+			$('.comments-content').on('click','.btn[data-class="edit"]', function(){
+
+				textarea = $(this).parents('li').find('.comment-content');
 				commentId = $(this).parents('li').attr('id');
-				if(valTextarea == ''){
-					$(this).parents('li').find('.comment-content').addClass('error');
+
+				if(textarea.val() == ''){
+					textarea.addClass('error');
 					return false
 				}else{
-					$(this).parents('li').find('.comment-content').removeClass('error');
+					textarea.removeClass('error');
 				} 
-				that.editComment.apply($(this), [valTextarea, commentId]);
-				$(this).parents('li').find('.comment-content').val('')
+
+				that.editComment.apply($(this), [textarea.val(), commentId]);
+				$(this).parents('li').find('.comment-content').val('');
 				return false
 			});
 
@@ -81,32 +69,52 @@ $(document).ready(function(){
 			})
 
 
-			$('.comments-content').on('click','.reply', function(){
-				valTextarea = $(this).parents('li').find('.comment-content').val();
-				that.replayComment.apply($(this), [valTextarea]);
+			$('.comments-content').on('click','.btn[data-class="reply"]', function(){
+				textarea = $(this).parents('li').find('.comment-content');
+
+				if(textarea.val() == ''){
+					textarea.addClass('error');
+					return false
+				}else{
+					textarea.removeClass('error');
+				} 
+
+				that.replayComment.apply($(this), [textarea.val()]);
+				textarea.val('');
 				return false
 			})
 
 			$('.comments-block').on('click','.add', function(){
-				valTextarea = $(this).parents('.message-field').find('.comment-content').val();
-				console.log(valTextarea)
-				if(valTextarea == ''){
-					$(this).parents('.message-field').find('.comment-content').addClass('error');
+				textarea = $(this).parents('.message-field').find('.comment-content');
+
+				if(textarea.val() == ''){
+					textarea.addClass('error');
 					return false
 				}else{
-					$(this).parents('.message-field').find('.comment-content').removeClass('error');
+					textarea.removeClass('error');
 				} 
-				that.addNewComment.apply($(this), [valTextarea]);
-				$(this).parents('.message-field').find('.comment-content').val('')
+
+				that.addNewComment.apply($(this), [textarea.val()]);
+				textarea.val('');
 				return false
 			});
 
 			$('.comments-block').on('click','.cancel', function(){
-				$(this).parents('.message-field__textarea').addClass('hidden');
+				$(this).parents('.message-field__textarea').slideUp(300);
 				return false
 			})
 
 
+		},
+
+		addClassToSend : function(){
+			$('.comments-content').on('click','.edit, .reply', function(){
+				var btn = $(this).parents('.message-field').find('.message-field__textarea .btn')
+				$(this).parents('.message-field').find('.message-field__textarea').slideDown(300);
+				btn.attr('data-class', '');
+				btn.attr('data-class', $(this).attr('class'));
+				return false
+			})
 		},
 
 		dateReviver : function(value){
@@ -122,11 +130,9 @@ $(document).ready(function(){
 		},
 
 		getPost : function(param){
-
 			var that = this;
 
 			function load(){
-
 				$('.comments-list').html('');
 				that.items = [];
 
@@ -135,28 +141,20 @@ $(document).ready(function(){
 				    type: 'GET',
 				    dateType: 'json',
 				    success: function(data){
-
-				    	console.log(data)
-					
 					    $.each( data, function( key, val ) {
-
 						    if (key < that.countComments) {
 						    	that.addCommentsTemplate(val);
 							}
-
 					    });
-						
 				    }
 				})	
 
 			};
 
-			load()
-
+			load();
 		},
 
 		addNewComment : function(newComment){
-
 			var id = $(this).parents('li').attr('id');
 			var targetComment = $(this);
 			var comment = {
@@ -176,80 +174,60 @@ $(document).ready(function(){
 				}
 
 			})
-
 			return false
-
 		},
 
 		replayComment : function(newComment){
 			var id = $(this).parents('li').attr('id');
-			var targetComment = $(this);
-
-
+			var targetUL  = $(this).parents('.comment').find('.children-list');
 			var url = 'http://frontend-test.pingbull.com/pages/oscaryld@gmail.com/comments/';
-
 			var comment = {
-
-				children : [{content : newComment}]
-				// 	{
-				// 		content : newComment,
-				// 		// id: id
-				// 	}
-				// ]
+				children : [
+					{
+						content : newComment,
+						id: id
+					}
+				]
 			}
 
-			console.log(comment)
-
 			$.ajax({
-				type: "PATCH",
+				type: "PUT",
 				url : url + id,
 				data:comment,
 				success: function(data){
-
-					var commentsTemplate = $('#comments-template').html();
+					console.log(comment.children[0].content)
 					data.created_at = Post.prototype.dateReviver.apply(Post, [data.created_at])
-					$( ".comments-list" ).prepend(Mustache.render(commentsTemplate, data));
-					console.log(data.content)
+					var result = '<li class="flex-wrap clearfix">'+
+		              '<div class="avatar"><img src="'+data.author.avatar+'" alt=""></div>'+
+		              '<div class="message-field"><div class="author-name">'+data.author.name+'</div>'+
+		              '<div class="date"><i class="fa fa-clock-o"></i>'+data.created_at+'</div>'+
+		              '<p>'+comment.children[0].content+'</p></li>';
 
+					targetUL.append(result)
 				}
-
 			})
-
 			return false
-
 		},
 
 		deleteComment : function(id){
-
 				var elementId = $('#'+id) 
-
 				var url = 'http://frontend-test.pingbull.com/pages/oscaryld@gmail.com/comments/';
-
 			    $.ajax({
 			         type: "DELETE",
 			         url: url + id,
 			         dataType: "json",
 			         success: function (data, status, jqXHR) {
 			            elementId.remove()
-			         },
-			     
-			         error: function (jqXHR, status) {
-			             // error handler
 			         }
 			     });
-
 			    return false
-
 		},
 
 		editComment : function(newComment, id){
-
 				var elementId = $('#'+id);
-
 				var comment = {
 					content : newComment
 				} 
-
 				var url = 'http://frontend-test.pingbull.com/pages/oscaryld@gmail.com/comments/';
 
 			    $.ajax({
@@ -259,51 +237,17 @@ $(document).ready(function(){
 			         data:comment,
 			         success: function (data, status, jqXHR) {
 			         	elementId.find('p').html(newComment)
-			         },
-			     
-			         error: function (jqXHR, status) {
-			             // error handler
 			         }
 			     });
-
 			    return false
 		},
-
-		filterComment : function(id){
-
-				var id = '1';
-				var url = 'http://frontend-test.pingbull.com/pages/oscaryld@gmail.com/comments?filter[{"author":"id"}]';
-
-			    $.ajax({
-			         type: "GET",
-			         url: url,
-			         dataType: "json",
-			         success: function (data, status, jqXHR) {
-			         	console.log(url)
-			         	console.log(data)
-			         },
-			     
-			         error: function (jqXHR, status) {
-			             // error handler
-			         }
-			     });
-
-			    return false
-		}
-
-
-
-
 	}
 
-
 	var post = new Post({
-		countComments:4,
-		loadMoreComments: 2
+		countComments:3,
+		loadMoreComments: 1
 	});
 
-
-	post.init()
-
+	post.init();
 
 });
